@@ -75,13 +75,17 @@ elseif ($guid -eq $guid99) {
     Write-Output "Power plan 99 is active"
     Write-Output "Setting power plan to 100"
     powercfg /setactive $guid100
-    Write-Output "Power plan set to 100"
+    Write-Output "---------------------------------"
+    Write-Output "Power plan set to 100. CPU can overclock."    
+    Write-Output "---------------------------------"
 }
 else {
     Write-Output "Neither power plan 100 nor 99 is active"
     Write-Output "Setting power plan to 99"
     powercfg /setactive $guid99
-    Write-Output "Power plan set to 99"
+    Write-Output "---------------------------------"
+    Write-Output "Power plan set to 99. CPU will not overclock."
+    Write-Output "---------------------------------"
 }
 
 ### wait for any key
