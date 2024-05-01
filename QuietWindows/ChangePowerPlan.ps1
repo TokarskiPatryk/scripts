@@ -20,47 +20,68 @@ if ($null -eq $guid) {
 }
 Write-Output "Extracted GUID: $guid"
 
+$plan100 = powercfg /list | Select-String -Pattern "100" | Select-Object -First 1
+$guid100 = GetGUID $plan100
+$plan99 = powercfg /list | Select-String -Pattern "99" | Select-Object -First 1
+$guid99 = GetGUID $plan99
 
-### Set the new power plan 
-### to 99% so the CPU won't overclock
+if ($null -eq $guid100) {
+    Write-Output "Creating new power plan 100"
+    $guid_string100 = powercfg /duplicatescheme $guid
+    $guid100 = (GetGUID $guid_string100)
+    # change name
+    powercfg /changename $guid100 "100"
 
-$output = powercfg /query $guid 54533251-82be-4824-96c1-47b60b740d00 bc5038f7-23e0-4960-96da-33abaf5935ec
-# Extract the current AC and DC power setting indexes
-$currentACIndex = $output | Select-String -Pattern "Current AC Power Setting Index: (0x[0-9A-F]+)" | ForEach-Object { $_.Matches.Groups[1].Value }
-$currentDCIndex = $output | Select-String -Pattern "Current DC Power Setting Index: (0x[0-9A-F]+)" | ForEach-Object { $_.Matches.Groups[1].Value }
-
-# Convert the indexes to decimal
-$currentACIndexDecimal = [convert]::ToInt32($currentACIndex, 16)
-$currentDCIndexDecimal = [convert]::ToInt32($currentDCIndex, 16)
-
-# Check if the indexes match 0x64 (100 in decimal)
-if ($currentACIndexDecimal -eq 100 -and $currentDCIndexDecimal -eq 100) {
-    Write-Output "Setting maximum processor state to 99%"
-    Write-Output "-------------------------------------------------"
-    Write-Output "CPU will not overclock and fans will be quieter"
-    Write-Output "-------------------------------------------------"
+    # changing values for power plan 100
     try {
-        powercfg /SETACVALUEINDEX $guid 54533251-82be-4824-96c1-47b60b740d00 bc5038f7-23e0-4960-96da-33abaf5935ec 99
-        powercfg /SETDCVALUEINDEX $guid 54533251-82be-4824-96c1-47b60b740d00 bc5038f7-23e0-4960-96da-33abaf5935ec 99
+        powercfg /SETACVALUEINDEX $guid100 54533251-82be-4824-96c1-47b60b740d00 bc5038f7-23e0-4960-96da-33abaf5935ec 100
+        powercfg /SETDCVALUEINDEX $guid100 54533251-82be-4824-96c1-47b60b740d00 bc5038f7-23e0-4960-96da-33abaf5935ec 100
         Write-Output "Power plan updated successfully"
     } catch {
         Write-Output "Failed to update power plan"
     }
+    Write-Output "New power plan 100 created with GUID: $guid100"
+
+    Write-Output "Creating new power plan 99"
+    $guid_string99 = powercfg /duplicatescheme $guid
+    $guid99 = (GetGUID $guid_string99)
+    # change name
+    powercfg /changename $guid99 "99"
+
+    # changing values for power plan 99
+    try {
+        powercfg /SETACVALUEINDEX $guid99 54533251-82be-4824-96c1-47b60b740d00 bc5038f7-23e0-4960-96da-33abaf5935ec 99
+        powercfg /SETDCVALUEINDEX $guid99 54533251-82be-4824-96c1-47b60b740d00 bc5038f7-23e0-4960-96da-33abaf5935ec 99
+        Write-Output "Power plan updated successfully"
+    } catch {
+        Write-Output "Failed to update power plan"
+    }
+    Write-Output "New power plan 100 created with GUID: $guid99"
+}
+else {
+    Write-Output "Power plan 100 already exists with GUID: $guid100"
+    Write-Output "Power plan 99 already exists with GUID: $guid99"
+
 }
 
-### else set it again to 100% so the CPU can overclock
+### Check which power plan is active
+if ($guid -eq $guid100) {
+    Write-Output "Power plan 100 is active"
+    Write-Output "Setting power plan to 99"
+    powercfg /setactive $guid99
+    Write-Output "Power plan set to 99"
+}
+elseif ($guid -eq $guid99) {
+    Write-Output "Power plan 99 is active"
+    Write-Output "Setting power plan to 100"
+    powercfg /setactive $guid100
+    Write-Output "Power plan set to 100"
+}
 else {
-    Write-Output "Setting maximum processor state to 100%"
-    Write-Output "-------------------------------------------------"
-    Write-Output "CPU now CAN overclock and fans will be louder"
-    Write-Output "-------------------------------------------------"
-    try {
-        powercfg /SETACVALUEINDEX $guid 54533251-82be-4824-96c1-47b60b740d00 bc5038f7-23e0-4960-96da-33abaf5935ec 100
-        powercfg /SETDCVALUEINDEX $guid 54533251-82be-4824-96c1-47b60b740d00 bc5038f7-23e0-4960-96da-33abaf5935ec 100
-        Write-Output "Power plan updated successfully"
-    } catch {
-        Write-Output "Failed to update power plan"
-    }
+    Write-Output "Neither power plan 100 nor 99 is active"
+    Write-Output "Setting power plan to 99"
+    powercfg /setactive $guid99
+    Write-Output "Power plan set to 99"
 }
 
 ### wait for any key
