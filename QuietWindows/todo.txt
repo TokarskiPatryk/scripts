@@ -1,0 +1,2 @@
+- Create gif with how the script works
+- refactor code in script
